@@ -1,0 +1,121 @@
+{
+    "Name": "Spark App Job",
+    "ReleaseLabel": "emr-5.25.0",
+    "Instances": {
+        "Ec2KeyName": "KEY_NAME",
+        "Ec2SubnetId": "subnet-xxxxxxxx",
+        "EmrManagedMasterSecurityGroup": "sg-xxxxxxxx",
+        "EmrManagedSlaveSecurityGroup": "sg-xxxxxxxx",
+        "ServiceAccessSecurityGroup": "sg-xxxxxxxxx",
+        "InstanceGroups": [
+            {
+                "Name": "Master Node",
+                "Market": "ON_DEMAND",
+                "InstanceRole": "MASTER",
+                "InstanceType": "m5.4xlarge",
+                "InstanceCount": 1,
+                "EbsConfiguration": {
+                    "EbsBlockDeviceConfigs": [
+                        {
+                            "VolumeSpecification": {
+                                "VolumeType": "gp2",
+                                "SizeInGB": 32
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "Name": "Worker Node",
+                "Market": "ON_DEMAND",
+                "InstanceRole": "CORE",
+                "InstanceType": "m5.2xlarge",
+                "InstanceCount": 4,
+                "EbsConfiguration": {
+                    "EbsBlockDeviceConfigs": [
+                        {
+                            "VolumeSpecification": {
+                                "VolumeType": "gp2",
+                                "SizeInGB": 32
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "TerminationProtected": false,
+        "KeepJobFlowAliveWhenNoSteps": true
+    },
+    "LogUri": "s3n:BUCKET/elasticmapreduce/",
+    "VisibleToAllUsers": true,
+    "Applications": [
+        {
+            "Name": "Hadoop"
+        },
+        {
+            "Name": "Spark"
+        },
+        {
+            "Name": "Hive"
+        }
+    ],
+    "Tags": [],
+    "JobFlowRole": "EMR_EC2_DefaultRole",
+    "ServiceRole": "EMR_DefaultRole",
+    "Configurations": [
+        {
+            "Classification": "spark-env",
+            "Configurations": [
+                {
+                    "Classification": "export",
+                    "Properties": {
+                        "PYSPARK_PYTHON": "/usr/bin/python3"
+                    }
+                }
+            ]
+        },
+        {
+            "Classification": "hive-site",
+            "Properties": {
+                "hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+            }
+        },
+        {
+            "Classification": "spark-hive-site",
+            "Properties": {
+                "hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+            }
+        },
+        {
+            "Classification": "capacity-scheduler",
+            "Properties": {
+                "yarn.scheduler.capacity.resource-calculator": "org.apache.hadoop.yarn.util.resource.DominantResourceCalculator"
+            }
+        },
+        {
+            "Classification": "spark",
+            "Properties": {
+                "maximizeResourceAllocation": "true"
+            }
+        },
+        {
+            "Classification": "spark-defaults",
+            "Properties": {
+                "spark.dynamicAllocation.enabled": "true",
+                "spark.executor.instances": "0"
+            }
+        }
+    ],
+    "EbsRootVolumeSize": 10,
+    "BootstrapActions": [
+        {
+            "Name": "Install spark app",
+            "ScriptBootstrapAction": {
+                "Path": "s3://BUCKET/package-installer.sh",
+                "Args": [
+                    "value"
+                ]
+            }
+        }
+    ]
+}

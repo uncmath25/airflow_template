@@ -1,0 +1,95 @@
+version: '3'
+services:
+  redis:
+    image: redis:3.2.7
+    command: redis-server --requirepass redispass
+  postgres:
+    image: postgres:9.6
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    volumes:
+      - airflow-pg-data:/var/lib/postgresql/data
+  webserver:
+    image: uncmath25/airflow-template
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env
+    # Generate Fernet Key: from cryptography.fernet import Fernet; Fernet.generate_key().decode() - needs to be set before data volume built
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=Celery
+      - FERNET_KEY=W0hMa-uUc_kA0vQGuuR7BTliVfreZ6KSdfxa87Asoak=
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+      - REDIS_PASSWORD=redispass
+    volumes:
+      - ./src/dags:/usr/local/airflow/dags
+      - ./tests:/usr/local/airflow/tests
+      - ./requirements.txt:/requirements.txt
+    ports:
+      - "8080:8080"
+    command: webserver
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+  flower:
+    image: uncmath25/airflow-template
+    restart: always
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    environment:
+      - EXECUTOR=Celery
+    ports:
+      - "5555:5555"
+    command: flower
+  scheduler:
+    image: uncmath25/airflow-template
+    restart: always
+    depends_on:
+      - webserver
+    env_file:
+      - .env
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=Celery
+      - FERNET_KEY=W0hMa-uUc_kA0vQGuuR7BTliVfreZ6KSdfxa87Asoak=
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+      - REDIS_PASSWORD=redispass
+    volumes:
+      - ./src/dags:/usr/local/airflow/dags
+      - ./tests:/usr/local/airflow/tests
+      - ./requirements.txt:/requirements.txt
+    command: scheduler
+  worker:
+    image: uncmath25/airflow-template
+    restart: always
+    depends_on:
+      - scheduler
+    env_file:
+      - .env
+    environment:
+      - EXECUTOR=Celery
+      - FERNET_KEY=W0hMa-uUc_kA0vQGuuR7BTliVfreZ6KSdfxa87Asoak=
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+      - REDIS_PASSWORD=redispass
+    volumes:
+      - ./src/dags:/usr/local/airflow/dags
+      - ./tests:/usr/local/airflow/tests
+      - ./requirements.txt:/requirements.txt
+    command: worker
+volumes:
+  airflow-pg-data:
