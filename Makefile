@@ -21,12 +21,13 @@ flake: build
 
 test: build
 	@echo "*** Running unit testing via pytest ***"
-	docker-compose -f docker-compose.yml run --rm -v "tests:/usr/local/airflow/tests" worker bash -c "pytest tests"
+	docker-compose -f docker-compose.yml run --rm -v "$(pwd)/tests:/usr/local/airflow/tests" worker bash -c "pytest tests"
 	make down
 
 down:
 	@echo "*** Stopping airflow docker containers ***"
-	docker-compose -f docker-compose.yml down -v --remove-orphans
+	# Add v flag to NOT persist postgres db (dag runs)
+	docker-compose -f docker-compose.yml down --remove-orphans
 
 up: build down
 	@echo "*** Running airflow server ***"

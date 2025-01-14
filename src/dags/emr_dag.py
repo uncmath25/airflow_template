@@ -24,7 +24,7 @@ default_args = {
     'execution_timeout': timedelta(hours=4)
 }
 
-dag = DAG('sample',
+dag = DAG('emr',
           default_args=default_args,
           schedule_interval='@daily',
           catchup=False,
